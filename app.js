@@ -1,5 +1,8 @@
 const express = require('express');
 const path = require('path');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+dotenv.config();
 const TaskModel = require('./models/TaskModel');
 
 const app = express();
@@ -8,7 +11,13 @@ app.set("view engine", "ejs");
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(express.static(path.join(__dirname, 'public')));
-
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log('Connected to MongoDB');
+  })
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+  });
 app.get('/', (req, res) => {
     res.render('index');
 })
@@ -69,5 +78,5 @@ app.get('/delete/:id', async (req, res) => {
 // ============================================================
 
 app.listen(3200, () => {
-    console.log("app hosted on http://localhost/3200");
+    console.log("app hosted on http://localhost:3200");
 })
