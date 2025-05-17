@@ -1,0 +1,117 @@
+### 📃 Mongoose Model (`models/Task.js`)
+```js
+const mongoose = require('mongoose');
+
+const taskSchema = mongoose.Schema({
+    title: String,
+    description: String,
+    status: { type: String, default: 'pending' }
+});
+
+module.exports = mongoose.model('Task', taskSchema);
+```
+
+
+## 🎨 New Simple Project Idea: **Task Manager App**
+A tiny web app where users can:
+- 📌 Add a task (with a title + description)
+- ✅ Mark a task as done
+- ❌ Delete a task  
+**(no authentication, no categories — simple CRUD)**
+
+---
+
+## 📖 Theory Breakdown
+
+### 📦 Stack:
+- **Node.js** — server environment  
+- **Express.js** — web framework  
+- **MongoDB (Mongoose)** — database  
+- **EJS** — templating engine  
+- **Tailwind CSS** — for quick UI styling  
+
+---
+
+### 🔧 Core Functionalities:
+| Action             | Route                     | Description                        |
+|:------------------|:--------------------------|:-----------------------------------|
+| View all tasks      | GET `/tasks`               | Shows all existing tasks           |
+| Create a task       | POST `/create`             | Adds a new task to the database    |
+| Delete a task       | GET `/delete/:taskid`      | Deletes a task by id               |
+| Mark task as done    | GET `/done/:taskid`        | Updates the task status to "done"  |
+
+---
+
+
+
+---
+
+## 🎨 Figma Wireframe Example Idea  
+
+Imagine a clean layout like this:
+
+---
+
+### 📱 Main Task List Page ( `/tasks` )
+
+```
+ -------------------------------------------------
+|          Task Manager                          |
+ -------------------------------------------------
+| [+] Add Task                                    |
+ -------------------------------------------------
+| ✅ Buy groceries               [Done] [Delete] |
+ -------------------------------------------------
+| 🕓 Finish homework             [Done] [Delete] |
+ -------------------------------------------------
+| 🕓 Clean the house             [Done] [Delete] |
+ -------------------------------------------------
+```
+
+### 📑 Add Task Page ( `/create` )
+
+```
+ -----------------------------------
+|        Add New Task               |
+ -----------------------------------
+| [ Title input field ]             |
+| [ Description textarea ]          |
+|                                   |
+| [ Submit button ]                 |
+ -----------------------------------
+```
+
+---
+
+## 🎨 Figma-style layout (text-based mockup)
+
+**Main Tasks Page**
+- 📝 **Header:** `Task Manager`
+- ✅ **Tasks list cards**  
+  - Task Title  
+  - Task Description  
+  - ✅ Done / ❌ Delete buttons  
+
+**Add Task Form**
+- 📄 Title input  
+- 📝 Description input  
+- ➕ Add Task button
+
+---
+
+## 🚀 Learning Outcomes:
+- How to perform basic **CRUD operations** with **MongoDB + Mongoose**
+- How to use **EJS views** for dynamic templating
+- How to style cleanly with **Tailwind CSS**
+- How to structure routes and handle **Express.js routing**
+- How to work with **form submissions**
+
+---
+
+## 📐 Optional: Real Figma Idea  
+If you’d like, I can mock up a real **Figma URL-style design file layout** or make an **image-based layout** using an online tool — just say the word!
+
+Would you like:
+- A **real Figma design link**
+- Or a quick **auto-generated image layout** right here?  
+Let me know — I can prep it for you 🚀
