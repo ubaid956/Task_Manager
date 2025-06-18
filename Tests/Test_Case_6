@@ -1,0 +1,25 @@
+@Test(priority = 6)
+public void testTaskDeletion() {
+    loginUser("testuser123", "SecurePass123!");
+    driver.get(baseUrl + "/dashboard");
+    
+    List<WebElement> tasksBeforeDeletion = driver.findElements(By.className("task-item"));
+    int initialTaskCount = tasksBeforeDeletion.size();
+    
+    WebElement firstTask = tasksBeforeDeletion.get(0);
+    WebElement deleteBtn = firstTask.findElement(By.className("delete-task-btn"));
+    deleteBtn.click();
+    
+    // Handle confirmation dialog
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebElement confirmBtn = wait.until(
+        ExpectedConditions.elementToBeClickable(By.id("confirmDeleteBtn"))
+    );
+    confirmBtn.click();
+    
+    // Wait for page refresh and verify task count decreased
+    Thread.sleep(2000);
+    List<WebElement> tasksAfterDeletion = driver.findElements(By.className("task-item"));
+    
+    Assert.assertEquals(tasksAfterDeletion.size(), initialTaskCount - 1);
+}

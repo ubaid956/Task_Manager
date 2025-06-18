@@ -1,0 +1,33 @@
+@Test(priority = 3, dependsOnMethods = {"testUserLogin"})
+public void testTaskCreation() {
+    // Login first
+    loginUser("testuser123", "SecurePass123!");
+    
+    driver.get(baseUrl + "/dashboard");
+    
+    WebElement createTaskBtn = driver.findElement(By.id("createTaskBtn"));
+    createTaskBtn.click();
+    
+    WebElement titleField = driver.findElement(By.id("taskTitle"));
+    WebElement descriptionField = driver.findElement(By.id("taskDescription"));
+    WebElement priorityDropdown = driver.findElement(By.id("taskPriority"));
+    WebElement dueDateField = driver.findElement(By.id("taskDueDate"));
+    WebElement saveTaskBtn = driver.findElement(By.id("saveTaskBtn"));
+    
+    titleField.sendKeys("Complete DevOps Assignment");
+    descriptionField.sendKeys("Implement Selenium tests and Jenkins pipeline");
+    
+    Select prioritySelect = new Select(priorityDropdown);
+    prioritySelect.selectByValue("high");
+    
+    dueDateField.sendKeys("2024-12-31");
+    saveTaskBtn.click();
+    
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebElement successMessage = wait.until(
+        ExpectedConditions.presenceOfElementLocated(By.className("task-created-message"))
+    );
+    
+    Assert.assertTrue(successMessage.isDisplayed());
+    Assert.assertEquals(successMessage.getText(), "Task created successfully!");
+}

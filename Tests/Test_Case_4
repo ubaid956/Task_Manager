@@ -1,0 +1,22 @@
+@Test(priority = 4)
+public void testTaskStatusUpdate() {
+    loginUser("testuser123", "SecurePass123!");
+    driver.get(baseUrl + "/dashboard");
+    
+    WebElement firstTask = driver.findElement(By.className("task-item"));
+    WebElement statusDropdown = firstTask.findElement(By.className("status-dropdown"));
+    
+    Select statusSelect = new Select(statusDropdown);
+    statusSelect.selectByValue("in_progress");
+    
+    WebElement updateBtn = firstTask.findElement(By.className("update-status-btn"));
+    updateBtn.click();
+    
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebElement updatedStatus = wait.until(
+        ExpectedConditions.presenceOfElementLocated(By.className("status-in_progress"))
+    );
+    
+    Assert.assertTrue(updatedStatus.isDisplayed());
+    Assert.assertEquals(updatedStatus.getText(), "In Progress");
+}

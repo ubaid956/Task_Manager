@@ -1,0 +1,24 @@
+@Test(priority = 1)
+public void testUserRegistration() {
+    driver.get(baseUrl + "/register");
+    
+    WebElement usernameField = driver.findElement(By.id("username"));
+    WebElement emailField = driver.findElement(By.id("email"));
+    WebElement passwordField = driver.findElement(By.id("password"));
+    WebElement confirmPasswordField = driver.findElement(By.id("confirmPassword"));
+    WebElement registerButton = driver.findElement(By.id("registerBtn"));
+    
+    usernameField.sendKeys("testuser123");
+    emailField.sendKeys("testuser123@example.com");
+    passwordField.sendKeys("SecurePass123!");
+    confirmPasswordField.sendKeys("SecurePass123!");
+    registerButton.click();
+    
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    WebElement successMessage = wait.until(
+        ExpectedConditions.presenceOfElementLocated(By.className("success-message"))
+    );
+    
+    Assert.assertTrue(successMessage.isDisplayed());
+    Assert.assertEquals(successMessage.getText(), "Registration successful!");
+}

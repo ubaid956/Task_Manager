@@ -1,0 +1,20 @@
+@Test(priority = 2)
+public void testUserLogin() {
+    driver.get(baseUrl + "/login");
+    
+    WebElement usernameField = driver.findElement(By.id("username"));
+    WebElement passwordField = driver.findElement(By.id("password"));
+    WebElement loginButton = driver.findElement(By.id("loginBtn"));
+    
+    usernameField.sendKeys("testuser123");
+    passwordField.sendKeys("SecurePass123!");
+    loginButton.click();
+    
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    wait.until(ExpectedConditions.urlContains("/dashboard"));
+    
+    Assert.assertTrue(driver.getCurrentUrl().contains("/dashboard"));
+    
+    WebElement welcomeMessage = driver.findElement(By.className("welcome-message"));
+    Assert.assertTrue(welcomeMessage.getText().contains("Welcome, testuser123"));
+}

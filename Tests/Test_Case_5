@@ -1,0 +1,23 @@
+@Test(priority = 5)
+public void testTaskSearch() {
+    loginUser("testuser123", "SecurePass123!");
+    driver.get(baseUrl + "/dashboard");
+    
+    WebElement searchField = driver.findElement(By.id("taskSearch"));
+    searchField.sendKeys("DevOps");
+    
+    WebElement searchBtn = driver.findElement(By.id("searchBtn"));
+    searchBtn.click();
+    
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+    List<WebElement> searchResults = wait.until(
+        ExpectedConditions.presenceOfAllElementsLocatedBy(By.className("task-item"))
+    );
+    
+    Assert.assertFalse(searchResults.isEmpty());
+    
+    for (WebElement task : searchResults) {
+        WebElement taskTitle = task.findElement(By.className("task-title"));
+        Assert.assertTrue(taskTitle.getText().toLowerCase().contains("devops"));
+    }
+}

@@ -1,0 +1,213 @@
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_IMAGE = 'markhobson/maven-chrome:latest'
+        APP_URL = 'http://192.168.18.16:3000/'
+        MYSQL_HOST = 'localhost'
+        MYSQL_DATABASE = 'task_management'
+        MYSQL_USER = credentials('mysql-user')
+        MYSQL_PASSWORD = credentials('mysql-password')
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out source code...'
+                checkout scm
+            }
+        }
+        
+        stage('Setup Database') {
+            steps {
+                script {
+                    echo 'Setting up test database...'
+                    // Database setup commands would go here
+                    sh '''
+                        echo "Database setup completed"
+                    '''
+                }
+            }
+        }
+        
+        stage('Build Application') {
+            steps {
+                echo 'Building application...'
+                script {
+                    if (fileExists('package.json')) {
+                        sh '''
+                            npm install
+                            npm run build
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Start Application') {
+            steps {
+                echo 'Starting application for testing...'
+                script {
+                    sh '''
+                        # Start the application in background
+                        nohup npm start > app.log 2>&1 &
+                        sleep 30  # Wait for application to start
+                        
+                        # Verify application is running
+                        curl -f ${APP_URL}/health || exit 1
+                    '''
+                }
+            }
+        }
+        
+        stage('Run Selenium Tests') {
+            steps {
+                echo 'Running Selenium automated tests...'
+                script {
+                    docker.image("${DOCKER_IMAGE}").inside('--shm-size=2g') {
+                        sh '''
+                            cd test-automation
+                            
+                            # Update base URL in test configuration
+                            sed -i "s|baseUrl = .*|baseUrl = \\"${APP_URL}\\"|g" src/test/java/com/devops/tests/base/BaseTest.java
+                            
+                            # Run tests with Maven
+                            mvn clean test -Dtest.baseUrl=${APP_URL}
+                            
+                            # Generate test reports
+                            mvn surefire-report:report
+                        '''
+                    }
+                }
+            }
+            post {
+                always {
+                    // Archive test results
+                    publishTestResults testResultsPattern: 'test-automation/target/surefire-reports/*.xml'
+                    
+                    // Archive test reports
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'test-automation/target/site',
+                        reportFiles: 'surefire-report.html',
+                        reportName: 'Selenium Test Report'
+                    ])
+                    
+                    // Capture screenshots on failure
+                    archiveArtifacts artifacts: 'test-automation/target/screenshots/*.png', allowEmptyArchive: true
+                }
+            }
+        }
+        
+        stage('Stop Application') {
+            steps {
+                echo 'Stopping application...'
+                sh '''
+                    # Stop the application
+                    pkill -f "npm start" || true
+                '''
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo 'Cleaning up workspace...'
+            cleanWs()
+        }
+        
+        success {
+            echo 'Pipeline completed successfully!'
+            emailext (
+                subject: "✅ Jenkins Pipeline Success - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                    <h2>Jenkins Pipeline Execution - SUCCESS</h2>
+                    
+                    <p><strong>Job:</strong> ${env.JOB_NAME}</p>
+                    <p><strong>Build Number:</strong> ${env.BUILD_NUMBER}</p>
+                    <p><strong>Build URL:</strong> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                    <p><strong>Triggered by:</strong> ${env.CHANGE_AUTHOR ?: 'Manual/Schedule'}</p>
+                    
+                    <h3>Test Results Summary:</h3>
+                    <p>All automated tests passed successfully!</p>
+                    
+                    <h3>Stages Completed:</h3>
+                    <ul>
+                        <li>✅ Checkout</li>
+                        <li>✅ Setup Database</li>
+                        <li>✅ Build Application</li>
+                        <li>✅ Start Application</li>
+                        <li>✅ Run Selenium Tests</li>
+                        <li>✅ Stop Application</li>
+                    </ul>
+                    
+                    <p>View detailed test reports: <a href="${env.BUILD_URL}HTML_20Report/">Test Report</a></p>
+                """,
+                to: "${env.CHANGE_AUTHOR_EMAIL ?: 'your-email@example.com'}",
+                mimeType: 'text/html'
+            )
+        }
+        
+        failure {
+            echo 'Pipeline failed!'
+            emailext (
+                subject: "❌ Jenkins Pipeline Failed - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                    <h2>Jenkins Pipeline Execution - FAILED</h2>
+                    
+                    <p><strong>Job:</strong> ${env.JOB_NAME}</p>
+                    <p><strong>Build Number:</strong> ${env.BUILD_NUMBER}</p>
+                    <p><strong>Build URL:</strong> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                    <p><strong>Triggered by:</strong> ${env.CHANGE_AUTHOR ?: 'Manual/Schedule'}</p>
+                    <p><strong>Failed Stage:</strong> ${env.STAGE_NAME}</p>
+                    
+                    <h3>Failure Details:</h3>
+                    <p>The pipeline failed during the test execution phase. Please check the console output for detailed error information.</p>
+                    
+                    <h3>Next Steps:</h3>
+                    <ul>
+                        <li>Review the console output: <a href="${env.BUILD_URL}console">Console Output</a></li>
+                        <li>Check test reports for failed test cases</li>
+                        <li>Review application logs for any runtime errors</li>
+                        <li>Fix the issues and push a new commit to re-trigger the pipeline</li>
+                    </ul>
+                    
+                    <p>View failed test details: <a href="${env.BUILD_URL}HTML_20Report/">Test Report</a></p>
+                """,
+                to: "${env.CHANGE_AUTHOR_EMAIL ?: 'your-email@example.com'}",
+                mimeType: 'text/html'
+            )
+        }
+        
+        unstable {
+            echo 'Pipeline completed with some test failures!'
+            emailext (
+                subject: "⚠️ Jenkins Pipeline Unstable - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                    <h2>Jenkins Pipeline Execution - UNSTABLE</h2>
+                    
+                    <p><strong>Job:</strong> ${env.JOB_NAME}</p>
+                    <p><strong>Build Number:</strong> ${env.BUILD_NUMBER}</p>
+                    <p><strong>Build URL:</strong> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                    <p><strong>Triggered by:</strong> ${env.CHANGE_AUTHOR ?: 'Manual/Schedule'}</p>
+                    
+                    <h3>Test Results:</h3>
+                    <p>Some automated tests failed. The build completed but with test failures.</p>
+                    
+                    <h3>Action Required:</h3>
+                    <ul>
+                        <li>Review failed test cases in the test report</li>
+                        <li>Fix the failing tests or application issues</li>
+                        <li>Push a new commit to re-run the pipeline</li>
+                    </ul>
+                    
+                    <p>View detailed test results: <a href="${env.BUILD_URL}HTML_20Report/">Test Report</a></p>
+                """,
+                to: "${env.CHANGE_AUTHOR_EMAIL ?: 'your-email@example.com'}",
+                mimeType: 'text/html'
+            )
+        }
+    }
+}
